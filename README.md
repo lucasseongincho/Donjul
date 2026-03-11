@@ -8,6 +8,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-10-FFCA28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Private](https://img.shields.io/badge/repo-private-lightgrey?style=flat-square)]()
 
 <br />
 
@@ -17,7 +18,7 @@
 
 ## Overview
 
-**돈줄** (pronounced *don-jul*, meaning "money line" in Korean) is a minimalist, full-stack personal finance app designed around the philosophy that your financial dashboard should feel as premium as the apps you love. Built with a Toss-inspired UI, it keeps you on top of monthly cash flow, savings progress, and account balances — with real-time sync across every device you own.
+**돈줄** (pronounced *don-jul*, meaning "money line" in Korean) is a minimalist, full-stack personal finance app designed around the philosophy that your financial dashboard should feel as premium as the apps you love. It keeps you on top of monthly cash flow, savings progress, and account balances — with real-time sync across every device you own.
 
 ---
 
@@ -41,7 +42,7 @@
 | Layer | Technology |
 |---|---|
 | UI Framework | React 18 (Vite, no TypeScript) |
-| Styling | Inline styles via `S` object + CSS variables, Geist & Geist Mono fonts |
+| Styling | Inline styles via `S` object + CSS variables, Geist & Geist Mono fonts (dark/light theme) |
 | Backend / DB | Firebase Firestore (real-time sync) |
 | Auth | Firebase Authentication (Google OAuth + Email/Password) |
 | Hosting | Firebase Hosting (deployed from `dist/`) |
@@ -58,20 +59,13 @@
 - Node.js 18+
 - A Firebase project with **Firestore** and **Authentication** enabled
 
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/lucasseongincho/Donjul.git
-cd Donjul
-```
-
-### 2. Install dependencies
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Firebase
+### 2. Configure Firebase
 
 Create `src/lib/firebase.js` (or update the existing one) with your Firebase project credentials:
 
@@ -94,7 +88,7 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 ```
 
-### 4. Start the dev server
+### 3. Start the dev server
 
 ```bash
 npm run dev
@@ -173,5 +167,5 @@ MIT — free to use, fork, and build on.
 ---
 
 <div align="center">
-  <sub>Built with focus and a lot of ☕ &nbsp;·&nbsp; <a href="https://github.com/lucasseongincho/Donjul">github.com/lucasseongincho/Donjul</a></sub>
+  <sub>Built with focus and a lot of ☕</sub>
 </div>
