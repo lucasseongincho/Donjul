@@ -1,27 +1,34 @@
-import { useState } from 'react';
-import Confetti from 'react-confetti';
-import { useWindowSize } from 'react-use';
+import { useState, useRef, useEffect } from 'react';
 import { S } from '../styles.js';
 import { formatMoney, newId } from '../utils/helpers.js';
 import { ProgressBar, Modal } from './shared.jsx';
 
 const COLORS = ["#C9A84C", "#4ECDC4", "#88D8B0", "#FF8B94", "#A8E6CF", "#96CEB4", "#45B7D1", "#FF6B6B", "#DDA0DD"];
+const FRUITS = ["🍎", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍒", "🍑", "🥭", "🍍", "🥝", "🍐", "🥥"];
+// Fix #10: 🍎 at 100% was ambiguous with fruit harvest badges — use 🌳
+const plantEmoji = (pct) => pct >= 100 ? "🌳" : pct >= 66 ? "🌲" : pct >= 33 ? "🌿" : "🌱";
 
-export default function Goals({ state, dispatch, t, lang, currency }) {
+export default function Goals({ state, dispatch, t, lang, currency, triggerConfetti }) {
   const fmt = (n) => formatMoney(n, currency);
   const fmtShort = (n) => formatMoney(n, currency, true);
   const { goals, accounts } = state;
-  const { width, height } = useWindowSize();
-  const [showConfetti, setShowConfetti] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [editingPrevPct, setEditingPrevPct] = useState(0);
+  // Fix #9: capture both saved+target at edit-start so confetti check is accurate
+  // even if a linked account balance syncs from Firestore mid-edit
+  const [editingSnapshot, setEditingSnapshot] = useState({ saved: 0, target: 0 });
   const [adding, setAdding] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: "", target: "", saved: "", color: "#C9A84C", linkedAccountId: "" });
   const [addError, setAddError] = useState("");
+  const [harvestToast, setHarvestToast] = useState(false);
+  const toastTimerRef = useRef(null); // Fix #7
+  useEffect(() => () => clearTimeout(toastTimerRef.current), []); // Fix #7 cleanup
 
-  const triggerConfetti = () => {
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 5000);
+  const handleHarvest = (g) => {
+    const fruit = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+    dispatch({ type: "HARVEST_GOAL", id: g.id, fruit });
+    clearTimeout(toastTimerRef.current);
+    setHarvestToast(true);
+    toastTimerRef.current = setTimeout(() => setHarvestToast(false), 4000);
   };
 
   const updateGoal = (id, field, val) => dispatch({ type: "UPDATE_GOAL", id, field, val });
@@ -38,7 +45,11 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
 
   return (
     <div style={S.page} className="m-page">
-      {showConfetti && <Confetti width={width} height={height} recycle={false} style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999 }} />}
+      {harvestToast && (
+        <div className="harvest-toast" style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 9998, background: "#1B4332", color: "#fff", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, fontFamily: "'Geist'", boxShadow: "0 8px 24px rgba(0,0,0,0.25)", whiteSpace: "nowrap" }}>
+          {t("harvestToast")}
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
           <div style={S.pageTitle}>{t("goalsTitle")}</div>
@@ -46,7 +57,13 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
         </div>
         <button style={S.btn()} onClick={() => { setAdding(true); setAddError(""); }}>{t("newGoal")}</button>
       </div>
-      {goals.length === 0 && <div style={{ ...S.card, fontSize: 13, color: "var(--c-muted)", textAlign: "center", padding: "40px 20px" }}>{t("noGoals")}</div>}
+      {goals.length === 0 && (
+        <div style={{ ...S.card, textAlign: "center", padding: "48px 24px" }}>
+          <div style={{ fontSize: "3.5rem", marginBottom: 16 }}>🌱</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: "var(--c-text)", marginBottom: 8 }}>{t("emptyGoalsTitle")}</div>
+          <div style={{ fontSize: 13, color: "var(--c-dim)", lineHeight: 1.7 }}>{t("emptyGoalsBody")}</div>
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {goals.map(g => {
           const linkedAccount = g.linkedAccountId ? accounts.find(a => a.id === g.linkedAccountId) : null;
@@ -105,8 +122,10 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button style={S.btn()} onClick={() => {
-                      const newPct = g.target ? Math.min(100, (effectiveSaved / g.target) * 100) : 0;
-                      if (newPct >= 100 && editingPrevPct < 100) triggerConfetti();
+                      // Fix #9: compare fresh snapshot values, not a potentially stale pct
+                      const prevPct = editingSnapshot.target > 0 ? (editingSnapshot.saved / editingSnapshot.target) * 100 : 0;
+                      const newPct = g.target > 0 ? Math.min(100, (effectiveSaved / g.target) * 100) : 0;
+                      if (newPct >= 100 && prevPct < 100) triggerConfetti();
                       setEditing(null);
                     }}>{t("save")}</button>
                     <button style={S.btn("danger")} onClick={() => { deleteGoal(g.id); setEditing(null); }}>{t("deleteLabel")}</button>
@@ -129,8 +148,18 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 20 }}>{plantEmoji(pct)}</span>
                       <span style={{ ...S.mono, fontSize: 22, fontWeight: 700, color: g.color }}>{pct.toFixed(0)}%</span>
-                      <button style={S.btn("sm")} onClick={() => { setEditingPrevPct(pct); setEditing(g.id); }}>{t("editLabel")}</button>
+                      {pct >= 100 ? (
+                        <button
+                          style={{ padding: "5px 12px", fontSize: 11, fontWeight: 700, fontFamily: "'Geist'", borderRadius: 8, border: "none", cursor: "pointer", background: "#E8B820", color: "#fff", boxShadow: "0 0 12px rgba(232,184,32,0.55)", letterSpacing: "0.04em", whiteSpace: "nowrap" }}
+                          onClick={() => handleHarvest(g)}
+                        >
+                          {t("harvestBtn")}
+                        </button>
+                      ) : (
+                        <button style={S.btn("sm")} onClick={() => { setEditingSnapshot({ saved: effectiveSaved, target: g.target }); setEditing(g.id); }}>{t("editLabel")}</button>
+                      )}
                     </div>
                   </div>
                   <ProgressBar pct={pct} color={g.color} />

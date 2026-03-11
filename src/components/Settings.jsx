@@ -1,23 +1,29 @@
-import { useState } from 'react';
-import { signOut, updatePassword } from 'firebase/auth';
-import { auth } from '../lib/firebase.js';
+import { useState, useRef, useEffect } from 'react';
+import { signOut, updatePassword, deleteUser } from 'firebase/auth';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase.js';
 import { S } from '../styles.js';
 import { formatMoney, getMonthlyIncome, newId } from '../utils/helpers.js';
 import { Modal } from './shared.jsx';
 
-export default function Settings({ state, dispatch, theme, toggleTheme, t, lang, setLang, currency, setCurrency }) {
+export default function Settings({ state, dispatch, theme, toggleTheme, t, lang, setLang, currency, setCurrency, onBeforeDeleteAccount, onStartTour, user }) {
   const fmt = (n) => formatMoney(n, currency);
   const fmtShort = (n) => formatMoney(n, currency, true);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [modalError, setModalError] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [changePwOpen, setChangePwOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
+  const pwTimerRef = useRef(null); // Fix #7
+  useEffect(() => () => clearTimeout(pwTimerRef.current), []);
 
-  const isEmailProvider = auth.currentUser?.providerData?.some(p => p.providerId === 'password');
+  // Fix #12: derive from reactive `user` prop, not the non-reactive auth.currentUser
+  const isEmailProvider = user?.providerData?.some(p => p.providerId === 'password');
 
   const handleChangePassword = () => {
     setPwError("");
@@ -29,7 +35,8 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
         setPwSuccess(true);
         setNewPassword("");
         setConfirmNewPassword("");
-        setTimeout(() => { setChangePwOpen(false); setPwSuccess(false); }, 2000);
+        clearTimeout(pwTimerRef.current);
+        pwTimerRef.current = setTimeout(() => { setChangePwOpen(false); setPwSuccess(false); }, 2000);
       })
       .catch(e => {
         if (e.code === "auth/requires-recent-login") {
@@ -41,6 +48,24 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
         }
       });
   };
+  const handleDeleteAccount = async () => {
+    setDeleteError("");
+    onBeforeDeleteAccount();
+    // Fix #1: delete auth FIRST — if it fails, Firestore data is untouched and recoverable.
+    // If auth succeeds but Firestore cleanup fails, the orphaned doc is inaccessible anyway.
+    try {
+      const uid = auth.currentUser.uid;
+      await deleteUser(auth.currentUser);
+      deleteDoc(doc(db, "user_data", uid)).catch(() => {}); // best-effort cleanup
+    } catch (e) {
+      if (e.code === "auth/requires-recent-login") {
+        signOut(auth);
+      } else {
+        setDeleteError("Something went wrong. Please try again.");
+      }
+    }
+  };
+
   const { accounts, incomeSources, fixedBills, personalCategories } = state;
 
   const openAdd = (section) => { setModal({ section, item: null }); setForm({}); setModalError(""); };
@@ -218,16 +243,19 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
 
       <div style={{ ...S.card, marginBottom: 24 }}>
         <div style={S.cardTitle}>{t("budgetSummary")}</div>
+        {/* Fix #2: use stable keys, not translated labels, for sign/format logic */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           {[
-            [t("monthlyIncome"), monthlyIncome, "var(--c-green)"],
-            [t("fixedBillsLabel"), totalFixed, "var(--c-accent)"],
-            [t("personalCatsLabel"), totalPersonal, "#4ECDC4"],
-            [t("surplusLabel"), surplus, surplus >= 0 ? "var(--c-green)" : "var(--c-red)"],
-          ].map(([l, v, c]) => (
-            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--c-border)" }}>
-              <span style={{ fontSize: 13, color: "var(--c-dim)" }}>{l}</span>
-              <span style={{ ...S.mono, color: c, fontWeight: 600 }}>{l === "Surplus" ? fmt(v) : (l === "Monthly Income" ? "+" : "-") + fmt(Math.abs(v))}</span>
+            { key: "income",   label: t("monthlyIncome"),    val: monthlyIncome, color: "var(--c-green)",  sign: "+" },
+            { key: "bills",    label: t("fixedBillsLabel"),  val: totalFixed,    color: "var(--c-accent)", sign: "-" },
+            { key: "cats",     label: t("personalCatsLabel"),val: totalPersonal, color: "#4ECDC4",          sign: "-" },
+            { key: "surplus",  label: t("surplusLabel"),     val: surplus,       color: surplus >= 0 ? "var(--c-green)" : "var(--c-red)" },
+          ].map(({ key, label, val, color, sign }) => (
+            <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--c-border)" }}>
+              <span style={{ fontSize: 13, color: "var(--c-dim)" }}>{label}</span>
+              <span style={{ ...S.mono, color, fontWeight: 600 }}>
+                {key === "surplus" ? fmt(val) : sign + fmt(Math.abs(val))}
+              </span>
             </div>
           ))}
         </div>
@@ -263,6 +291,12 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
         </div>
       </div>
 
+      <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+        <button style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "var(--c-btn-sm-bg)", color: "var(--c-btn-sm-text)", letterSpacing: "0.04em" }} onClick={onStartTour}>
+          {t("takeTour")}
+        </button>
+      </div>
+
       <div style={{ display: "flex", gap: 10 }}>
         {isEmailProvider && (
           <button style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "var(--c-btn-sm-bg)", color: "var(--c-btn-sm-text)", letterSpacing: "0.04em" }}
@@ -271,9 +305,36 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
           </button>
         )}
         <button style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "var(--c-danger-bg)", color: "var(--c-danger-text)", letterSpacing: "0.04em" }} onClick={() => signOut(auth)}>{t("signOut")}</button>
+        <button style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "transparent", color: "var(--c-muted)", letterSpacing: "0.04em" }} onClick={() => { setDeleteOpen(true); setDeleteError(""); }}>{t("deleteAccountBtn")}</button>
       </div>
 
       {renderModal()}
+
+      {deleteOpen && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "var(--c-overlay)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ ...S.modal, maxWidth: 400, textAlign: "center" }}>
+            <div style={{ fontSize: 52, marginBottom: 16 }}>🥺🍂</div>
+            <div style={{ fontWeight: 700, fontSize: 17, color: "var(--c-text)", marginBottom: 12, lineHeight: 1.4 }}>{t("deleteAccountPhrase")}</div>
+            {deleteError && (
+              <div style={{ background: "var(--c-danger-bg)", color: "var(--c-danger-text)", border: "1px solid var(--c-danger-text)", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 16, textAlign: "left" }}>
+                {deleteError}
+              </div>
+            )}
+            <button
+              style={{ width: "100%", padding: "14px", fontSize: 15, fontWeight: 700, fontFamily: "'Geist'", borderRadius: 12, border: "none", cursor: "pointer", background: "var(--c-green)", color: "#fff", marginBottom: 12, letterSpacing: "0.02em" }}
+              onClick={() => { setDeleteOpen(false); setDeleteError(""); }}
+            >
+              {t("deleteAccountStay")}
+            </button>
+            <button
+              style={{ background: "none", border: "none", color: "var(--c-danger-text)", fontSize: 13, cursor: "pointer", fontFamily: "'Geist Mono'", width: "100%", padding: "8px 0" }}
+              onClick={handleDeleteAccount}
+            >
+              {t("deleteAccountConfirm")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {changePwOpen && (
         <Modal title={t("changePassword")} onClose={() => setChangePwOpen(false)}>

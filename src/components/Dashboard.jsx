@@ -26,9 +26,10 @@ export default function Dashboard({ state, t, lang, currency }) {
       <div style={S.pageSub}>{moName(curMo)} {curYr}</div>
 
       {isEmpty && (
-        <div style={{ ...S.card, borderLeft: "3px solid var(--c-accent)", background: "var(--c-accent-subtle)", marginBottom: 28 }}>
-          <div style={{ fontWeight: 700, color: "var(--c-accent)", marginBottom: 6 }}>{t("welcomeTitle")}</div>
-          <div style={{ fontSize: 13, color: "var(--c-dim)", lineHeight: 1.7 }}>{t("welcomeBody")}</div>
+        <div style={{ ...S.card, textAlign: "center", padding: "48px 24px", marginBottom: 28 }}>
+          <div style={{ fontSize: "3.5rem", marginBottom: 16 }}>🌱</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: "var(--c-text)", marginBottom: 8 }}>{t("emptyAccountsTitle")}</div>
+          <div style={{ fontSize: 13, color: "var(--c-dim)", lineHeight: 1.7 }}>{t("emptyAccountsBody")}</div>
         </div>
       )}
 

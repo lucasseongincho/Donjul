@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { S } from '../styles.js';
 
 const STEPS = [
-  { icon: "👋", titleKey: "onboarding0Title", bodyKey: "onboarding0Body" },
-  { icon: "💰", titleKey: "onboarding1Title", bodyKey: "onboarding1Body" },
-  { icon: "🏦", titleKey: "onboarding2Title", bodyKey: "onboarding2Body" },
-  { icon: "🎯", titleKey: "onboarding3Title", bodyKey: "onboarding3Body" },
+  { icon: "🪙🍃", titleKey: "onboarding0Title", bodyKey: "onboarding0Body" },
+  { icon: "💧",   titleKey: "onboarding1Title", bodyKey: "onboarding1Body" },
+  { icon: "🏦",   titleKey: "onboarding2Title", bodyKey: "onboarding2Body" },
+  { icon: "🌱➡️🌳", titleKey: "onboarding3Title", bodyKey: "onboarding3Body" },
 ];
 
 export default function Onboarding({ t, onDone }) {
@@ -50,7 +50,7 @@ export default function Onboarding({ t, onDone }) {
         <div style={{
           fontSize: 14, color: "var(--c-muted)", textAlign: "center",
           lineHeight: 1.65, marginBottom: 32,
-          fontFamily: "'Geist Mono'",
+          fontFamily: "'Geist Mono'", whiteSpace: "pre-line",
         }}>
           {t(current.bodyKey)}
         </div>

@@ -1,25 +1,33 @@
-# Current Task: UI/UX Brand Alignment & Color Theming
+# Current Task: Build the "Garden" Tab & Goal Harvesting Logic
 
-I want to update the visual design of my application to perfectly align with my new brand logo. I am attaching my logo image to this prompt. Please analyze it and "catch the vibe."
+We are building a gamified "Trophy Room" for completed goals to increase user retention. When a goal hits 100%, users can "Harvest" it, which moves the goal to a new "Garden" tab and rewards them with a fruit badge.
 
-### 1. Pre-Flight Safety (CRITICAL)
-Before changing a single line of code, please use the git CLI to commit the current state of the app so I can easily revert if I don't like the new design.
-- Run: `git add .`
-- Run: `git commit -m "Save point: Pre-logo UI redesign"`
+### 1. Update Firebase Data Structure
+- Ensure the user document in Firestore can accept a new array called `harvested_goals` (default to `[]` for new or existing users if undefined).
 
-### 2. Analyze the Logo & Extract Palette
-- Look at the attached logo image. 
-- Extract the primary colors: specifically the exact hex codes for the dark green text/outlines, the bright green leaf, and the gold/yellow of the coins.
-- Identify the "vibe": It is organic, fresh, friendly, and wealth-building.
+### 2. Create the Custom SVG Component (`src/components/MoneyTreeSVG.jsx`)
+- Create a new component that purely renders a minimalist, geometric SVG of a tree.
+- **Design:** Keep it extremely clean and modern (Toss-style vector art). Use a simple trunk and overlapping circular leaves.
+- **Colors:** Use the brand's Forest Green for the leaves and Coin Gold (or a soft brown/gold) for the trunk.
+- Make it responsive (e.g., `width="100%"` `max-width="200px"`).
 
-### 3. Update the App's Theming (`src/index.css` or Tailwind/Inline styles)
-- Inject this new color palette into the app. 
-- **Primary Buttons / Accents:** Replace the current default primary colors with the logo's Green or Gold.
-- **Backgrounds / Cards:** Keep the premium Toss-style soft shadows and large border-radiuses, but ensure the background colors complement the new green/gold palette. 
-- **Dark Mode Compatibility:** Ensure that the new colors still look good if the user switches to Dark Mode. If necessary, slightly desaturate the green/gold for the dark theme.
+### 3. Create the Garden Tab (`src/components/Garden.jsx`)
+- Build a new main tab component.
+- **Top Section:** Render the `<MoneyTreeSVG />` centered. Below it, display a massive, premium stat card showing the sum of all `harvested_goals` targets. 
+  - Text: "Lifetime Wealth Grown" / "총 수확한 금액".
+- **Bottom Section:** Map through `harvested_goals` and render them in a clean grid.
+  - Each item should display a random fruit emoji (🍎, 🍊, 🍑, 🍇) as its "badge", the goal name, and the total amount saved.
+- Ensure the new tab is added to the main App navigation/routing.
 
-### 4. Implementation Rules
-- Do NOT change the layout, flexbox structures, or the underlying Firebase logic. This is strictly a CSS/Color/Theming overhaul.
-- Do NOT remove any features (like Confetti or Auth).
-- When you are done, explain exactly what colors you changed and how they map to the logo.
-- Provide me with the exact `git` command to revert the changes if I decide I want the old design back.
+### 4. Update Goal Logic & The "Harvest" Button (`src/components/Goals.jsx`)
+- In the Goal card, check if `saved >= target`.
+- **If true:** Hide the standard "Edit" button and replace it with a glowing, Coin Gold button that says "Harvest" (수확하기) with a 🧺 icon.
+- **The `handleHarvest` function:** 1. Trigger the existing Confetti effect.
+  2. Assign a random fruit emoji to the goal object.
+  3. Move the goal object out of the active `goals` array and push it into the `harvested_goals` array in Firebase.
+  4. Show a success toast/banner: "Goal harvested! Check your Garden." / "수확 완료! 정원을 확인해보세요."
+
+### 5. STRICT PRESERVATION
+- Wire all new text into the `t()` translation engine for English and Korean.
+- Maintain the premium Toss-style CSS (rounded corners, soft shadows, no harsh borders).
+- Do NOT break the existing Firebase read/write logic for active accounts and goals.

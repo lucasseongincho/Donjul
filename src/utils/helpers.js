@@ -81,7 +81,7 @@ export function getMonthRange() {
 export const ALL_MONTHS = getMonthRange();
 
 export function buildDefault() {
-  return { accounts: [], incomeSources: [], fixedBills: [], personalCategories: [], goals: [], months: {}, hasSeenOnboarding: false };
+  return { accounts: [], incomeSources: [], fixedBills: [], personalCategories: [], goals: [], harvested_goals: [], months: {}, hasSeenOnboarding: false };
 }
 
 export function migrateFromOld(saved) {
@@ -122,7 +122,7 @@ export function loadSaved(saved) {
   if (!Array.isArray(saved.accounts)) return migrateFromOld(saved);
   const data = { ...buildDefault(), ...saved, months: { ...saved.months } };
   // Existing users who don't have the flag yet — skip onboarding if they already have data
-  if (saved.hasSeenOnboarding === undefined && (data.accounts.length > 0 || data.incomeSources.length > 0 || data.goals.length > 0)) {
+  if (saved.hasSeenOnboarding === undefined && (data.accounts.length > 0 || data.incomeSources.length > 0 || data.goals.length > 0 || (data.harvested_goals || []).length > 0)) {
     data.hasSeenOnboarding = true;
   }
   return data;

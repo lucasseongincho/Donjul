@@ -1,25 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { S } from '../styles.js';
 import { formatMoney } from '../utils/helpers.js';
 
-export default function Accounts({ state, dispatch, t, lang, currency }) {
+export default function Accounts({ state, dispatch, t, lang, currency, onGoalComplete }) {
   const fmt = (n) => formatMoney(n, currency);
   const fmtShort = (n) => formatMoney(n, currency, true);
   const currSymbol = currency === "KRW" ? "₩" : "$";
-  const { accounts } = state;
+  const { accounts, goals = [] } = state;
   const [balances, setBalances] = useState(() => Object.fromEntries(accounts.map(a => [a.id, String(a.balance.toFixed(2))])));
   const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef(null); // Fix #7
+  useEffect(() => () => clearTimeout(savedTimerRef.current), []); // Fix #7 cleanup
 
+  // Fix #5: include balance in key so Firestore background updates refresh the inputs
+  const accountsKey = accounts.map(a => `${a.id}:${a.balance}`).join(",");
   useEffect(() => {
     setBalances(Object.fromEntries(accounts.map(a => [a.id, String(a.balance.toFixed(2))])));
-  }, [accounts.map(a => a.id).join(",")]);
+  }, [accountsKey]); // eslint-disable-line
 
   const handleSave = () => {
+    let goalJustCompleted = false;
     accounts.forEach(a => {
       const val = parseFloat(balances[a.id]);
-      if (!isNaN(val)) dispatch({ type: "SET_BALANCE", id: a.id, balance: val });
+      if (!isNaN(val)) {
+        dispatch({ type: "SET_BALANCE", id: a.id, balance: val });
+        goals.forEach(g => {
+          if (g.linkedAccountId === a.id && g.target > 0) {
+            const wasBelow = (a.balance / g.target) < 1;
+            const nowReached = (val / g.target) >= 1;
+            if (wasBelow && nowReached) goalJustCompleted = true;
+          }
+        });
+      }
     });
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
+    if (goalJustCompleted) onGoalComplete?.();
+    clearTimeout(savedTimerRef.current);
+    setSaved(true);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
   };
 
   if (accounts.length === 0) return (

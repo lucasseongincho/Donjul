@@ -61,47 +61,48 @@ button:focus-visible {
 }
 
 /* ── Theme variables ── */
+/* Logo palette: forest green #2D6B2E · leaf green #6CC44A · coin gold #F2C430 */
 :root {
-  --c-bg: #0D0D0F;
-  --c-card: #161618;
-  --c-nav: #111113;
+  --c-bg: #0C0F0C;
+  --c-card: #141A14;
+  --c-nav: #101410;
   --c-text: #EDEBE6;
   --c-muted: #52566A;
   --c-dim: #8A90A4;
-  --c-accent: #C9A84C;
-  --c-green: #88D8B0;
+  --c-accent: #E8B820;
+  --c-green: #5DC44A;
   --c-red: #FF6B6B;
-  --c-border: #232328;
-  --c-input-bg: #1C1C20;
-  --c-input-border: #2E2E36;
-  --c-sub: #111113;
-  --c-btn-sm-bg: #232328;
+  --c-border: #1E261E;
+  --c-input-bg: #192019;
+  --c-input-border: #2A342A;
+  --c-sub: #101410;
+  --c-btn-sm-bg: #1E261E;
   --c-btn-sm-text: #8A90A4;
-  --c-accent-faint: rgba(201, 168, 76, 0.15);
-  --c-accent-subtle: rgba(201, 168, 76, 0.07);
+  --c-accent-faint: rgba(232, 184, 32, 0.15);
+  --c-accent-subtle: rgba(232, 184, 32, 0.07);
   --c-danger-bg: #2A1010;
   --c-danger-text: #FF6B6B;
   --c-overlay: rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="light"] {
-  --c-bg: #F5F4F0;
+  --c-bg: #F2F5EE;
   --c-card: #FFFFFF;
   --c-nav: #FFFFFF;
   --c-text: #18171A;
   --c-muted: #78746E;
   --c-dim: #9A9590;
-  --c-accent: #A07828;
-  --c-green: #16A34A;
+  --c-accent: #8A6E06;
+  --c-green: #2D6B2E;
   --c-red: #DC2626;
-  --c-border: #E4E1DB;
-  --c-input-bg: #F0EDE8;
-  --c-input-border: #C8C5BF;
-  --c-sub: #F0EDE8;
-  --c-btn-sm-bg: #ECEAE4;
+  --c-border: #DDE4D8;
+  --c-input-bg: #ECF0E8;
+  --c-input-border: #C4CCBC;
+  --c-sub: #ECF0E8;
+  --c-btn-sm-bg: #E4EAE0;
   --c-btn-sm-text: #68645E;
-  --c-accent-faint: rgba(160, 120, 40, 0.14);
-  --c-accent-subtle: rgba(160, 120, 40, 0.07);
+  --c-accent-faint: rgba(138, 110, 6, 0.14);
+  --c-accent-subtle: rgba(138, 110, 6, 0.07);
   --c-danger-bg: #FEE2E2;
   --c-danger-text: #DC2626;
   --c-overlay: rgba(0, 0, 0, 0.4);
@@ -159,5 +160,9 @@ button:focus-visible {
   .m-table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .harvest-toast {
+    bottom: calc(70px + env(safe-area-inset-bottom, 20px)) !important;
   }
 }

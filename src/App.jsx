@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 import {
   onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   signInWithPopup, signOut, GoogleAuthProvider
@@ -14,7 +16,8 @@ import MonthlyView from './components/MonthlyView.jsx';
 import Accounts from './components/Accounts.jsx';
 import Goals from './components/Goals.jsx';
 import Settings from './components/Settings.jsx';
-import Onboarding from './components/Onboarding.jsx';
+import Garden from './components/Garden.jsx';
+import TourGuide from './components/TourGuide.jsx';
 
 function reducer(state, action) {
   switch (action.type) {
@@ -50,6 +53,15 @@ function reducer(state, action) {
       const m = { ...state.months[action.key], customRows: (state.months[action.key]?.customRows || []).filter(r => r.id !== action.rowId) };
       return { ...state, months: { ...state.months, [action.key]: m } };
     }
+    case "HARVEST_GOAL": {
+      const goal = state.goals.find(g => g.id === action.id);
+      if (!goal) return state;
+      return {
+        ...state,
+        goals: state.goals.filter(g => g.id !== action.id),
+        harvested_goals: [...(state.harvested_goals || []), { ...goal, fruit: action.fruit }],
+      };
+    }
     case "SET_ONBOARDING_SEEN": return { ...state, hasSeenOnboarding: true };
     default: return state;
   }
@@ -73,6 +85,21 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginConfirmPassword, setLoginConfirmPassword] = useState("");
+  const [tourOpen, setTourOpen] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [dataError, setDataError] = useState(false); // Fix #8
+  const { width, height } = useWindowSize();
+  const confettiTimerRef = useRef(null); // Fix #7
+  const triggerConfetti = useCallback(() => {
+    clearTimeout(confettiTimerRef.current);
+    setShowConfetti(true);
+    confettiTimerRef.current = setTimeout(() => setShowConfetti(false), 5000);
+  }, []);
+  useEffect(() => () => clearTimeout(confettiTimerRef.current), []); // Fix #7 cleanup
+  const firestoreUnsubRef = useRef(() => {});
+  const userRef = useRef(user);           // Fix #6: always-current user ref
+  const pendingSaveRef = useRef(false);   // Fix #3: tracks in-flight saves
+  useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -99,17 +126,20 @@ export default function App() {
   const t = useCallback((key) => t_(lang, key), [lang]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setAuthReady(true); });
+    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setAuthReady(true); if (!u) setEmailModalOpen(false); });
     return unsub;
   }, []);
 
   const dispatch = useCallback((action) => {
     dispatch_(prev => {
       const next = reducer(prev, action);
-      if (user) save(user.uid, next);
+      if (userRef.current) {
+        pendingSaveRef.current = true; // Fix #3: block stale snapshots during save
+        save(userRef.current.uid, next, () => { pendingSaveRef.current = false; });
+      }
       return next;
     });
-  }, [user]);
+  }, []); // Fix #6: no user dep — uses ref
 
   useEffect(() => {
     if (!user) return;
@@ -122,18 +152,28 @@ export default function App() {
     const unsub = onSnapshot(userDoc, (snap) => {
       clearTimeout(fallback);
       if (snap.exists()) {
-        try { dispatch_(loadSaved(JSON.parse(snap.data().data))); } catch (e) { }
+        // Fix #3: skip echo of our own in-flight save — local state is already current
+        if (!pendingSaveRef.current) {
+          try {
+            dispatch_(loadSaved(JSON.parse(snap.data().data)));
+          } catch (e) {
+            console.error('Failed to parse Firestore data:', e); // Fix #8: no silent fail
+            setDataError(true);
+          }
+        }
       } else {
         const def = buildDefault();
         dispatch_(def);
         setDoc(doc(db, "user_data", user.uid), { data: JSON.stringify(def) }).catch(() => { });
       }
       if (!initialized) { initialized = true; setReady(true); }
-    }, () => {
+    }, (err) => {
+      console.error('Firestore snapshot error:', err);
       clearTimeout(fallback);
       if (!initialized) { initialized = true; setReady(true); }
     });
-    return () => { clearTimeout(fallback); unsub(); };
+    firestoreUnsubRef.current = unsub;
+    return () => { clearTimeout(fallback); unsub(); firestoreUnsubRef.current = () => {}; };
   }, [user]);
 
   if (!splashDone) return <SplashScreen fading={splashFading} />;
@@ -310,23 +350,37 @@ export default function App() {
     );
   }
 
-  if (!ready) return null;
+  // Fix #11: never show a blank screen — show a recoverable loading state
+  if (!ready) return (
+    <div style={{ ...S.app, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100dvh" }}>
+      <div style={{ fontSize: 13, color: "var(--c-muted)", fontFamily: "'Geist Mono'" }}>Loading…</div>
+    </div>
+  );
 
   const TABS = [
     { id: "dashboard", label: t("navDashboard") },
     { id: "monthly", label: t("navMonthly") },
     { id: "accounts", label: t("navAccounts") },
     { id: "goals", label: t("navGoals") },
+    { id: "garden", label: t("navGarden") },
     { id: "settings", label: t("navSettings") },
   ];
 
   return (
     <div style={{ ...S.app, wordBreak: lang === "ko" ? "keep-all" : "normal" }}>
+      {showConfetti && <Confetti width={width} height={height} recycle={false} style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999 }} />}
+      {dataError && ( // Fix #8: surface Firestore parse errors visibly
+        <div style={{ background: "var(--c-danger-bg)", color: "var(--c-danger-text)", borderBottom: "1px solid var(--c-danger-text)", padding: "10px 20px", fontSize: 13, fontFamily: "'Geist Mono'", textAlign: "center" }}>
+          {lang === "ko" ? "데이터를 불러오는 데 실패했습니다. 페이지를 새로고침 해주세요." : "Failed to load your data. Please refresh the page."}
+          <button onClick={() => window.location.reload()} style={{ marginLeft: 12, background: "none", border: "1px solid var(--c-danger-text)", borderRadius: 6, color: "var(--c-danger-text)", cursor: "pointer", fontSize: 12, padding: "2px 10px" }}>Refresh</button>
+        </div>
+      )}
       <nav style={S.nav} className="m-nav">
         <div style={S.navBrand} className="m-nav-brand">{lang === "ko" ? "돈줄" : "Don Jul"}</div>
-        {TABS.map(tab_ => (
-          <button key={tab_.id} style={S.navTab(tab === tab_.id)} className={"m-nav-tab" + (tab === tab_.id ? " m-nav-tab-active" : "")} onClick={() => setTab(tab_.id)}>{tab_.label}</button>
-        ))}
+        {TABS.map(tab_ => {
+          const tourClass = tab_.id === 'settings' ? ' tour-income-setup' : tab_.id === 'accounts' ? ' tour-add-account' : tab_.id === 'goals' ? ' tour-add-goal' : '';
+          return <button key={tab_.id} style={S.navTab(tab === tab_.id)} className={"m-nav-tab" + (tab === tab_.id ? " m-nav-tab-active" : "") + tourClass} onClick={() => setTab(tab_.id)}>{tab_.label}</button>;
+        })}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }} className="m-nav-user">
           <span style={{ fontSize: 12, color: "var(--c-muted)", fontFamily: "'JetBrains Mono', monospace" }}>{user.email}</span>
           <button style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "var(--c-btn-sm-bg)", color: "var(--c-btn-sm-text)", letterSpacing: "0.04em" }} onClick={() => signOut(auth)}>Sign Out</button>
@@ -334,11 +388,12 @@ export default function App() {
       </nav>
       {tab === "dashboard" && <Dashboard state={state} t={t} lang={lang} currency={currency} />}
       {tab === "monthly" && <MonthlyView state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} />}
-      {tab === "accounts" && <Accounts state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} />}
-      {tab === "goals" && <Goals state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} />}
-      {tab === "settings" && <Settings state={state} dispatch={dispatch} theme={theme} toggleTheme={toggleTheme} t={t} lang={lang} setLang={setLang} currency={currency} setCurrency={setCurrency} />}
-      {!state.hasSeenOnboarding && (
-        <Onboarding t={t} lang={lang} onDone={() => dispatch({ type: "SET_ONBOARDING_SEEN" })} />
+      {tab === "accounts" && <Accounts state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} onGoalComplete={() => { setTab("goals"); triggerConfetti(); }} />}
+      {tab === "goals" && <Goals state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} triggerConfetti={triggerConfetti} />}
+      {tab === "garden" && <Garden state={state} t={t} currency={currency} />}
+      {tab === "settings" && <Settings state={state} dispatch={dispatch} theme={theme} toggleTheme={toggleTheme} t={t} lang={lang} setLang={setLang} currency={currency} setCurrency={setCurrency} onBeforeDeleteAccount={() => firestoreUnsubRef.current()} onStartTour={() => setTourOpen(true)} user={user} />}
+      {(!state.hasSeenOnboarding || tourOpen) && (
+        <TourGuide t={t} onDone={() => { if (!state.hasSeenOnboarding) dispatch({ type: "SET_ONBOARDING_SEEN" }); setTourOpen(false); }} />
       )}
     </div>
   );
