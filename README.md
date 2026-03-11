@@ -11,8 +11,6 @@
 
 <br />
 
-![App Screenshot](./public/screenshot.png)
-
 </div>
 
 ---
@@ -26,9 +24,12 @@
 ## Features
 
 - 📊 **Monthly Cash Flow** — Track planned vs. actual spending across fixed bills and personal categories, with per-transaction logging and a running surplus/deficit.
-- 🎯 **Linked Savings Goals** — Create savings targets and optionally link them directly to a bank account. The goal card auto-updates as your real balance changes.
+- 🎯 **Savings Goals** — Create savings targets and optionally link them to a bank account. The goal card auto-updates as your real balance changes.
+- 🧺 **Goal Harvesting** — When a savings goal hits 100%, a glowing "Harvest" button appears. One tap triggers a confetti celebration, assigns a fruit badge, and moves the goal into your Garden — permanently memorializing your win.
+- 🌱 **Garden Tab** — A dedicated trophy room for completed goals. See your lifetime wealth grown at a glance, browse harvested goals displayed as fruit-badged cards beneath a geometric money tree.
 - 🏦 **Multi-Account Dashboard** — Manage checking, savings, credit, and investment accounts. Set a floor amount and get sweep reminders when the balance exceeds it.
 - 🔄 **Live Firebase Sync** — All data is persisted to Firestore in real time. Open the app on your phone or laptop — it's always up to date.
+- 🗺️ **Interactive Product Tour** — A first-run guided tour walks new users through every major feature using react-joyride.
 - 🌐 **Full Korean Localization** — Every string, number format, and date label is available in English and Korean (한국어), switchable at any time from Settings.
 - 🌙 **Dark & Light Mode** — System-aware theming with a clean toggle. No eye strain, ever.
 - 🔐 **Auth Flexibility** — Sign in with Google or create a standard email/password account. Firebase Auth handles the rest.
@@ -45,7 +46,8 @@
 | Auth | Firebase Authentication (Google OAuth + Email/Password) |
 | Hosting | Firebase Hosting (deployed from `dist/`) |
 | Build Tool | Vite 5 |
-| State | `useState` + custom `dispatch` + `reducer` — no external state library |
+| State | `useState` + custom `dispatch` — no external state library |
+| Animations | react-confetti, react-joyride |
 
 ---
 
@@ -125,10 +127,12 @@ Donjul/
 │   │   ├── Dashboard.jsx        # Overview, stat cards, goal progress, upcoming months
 │   │   ├── MonthlyView.jsx      # Cash flow table, transactions, custom rows
 │   │   ├── Accounts.jsx         # Balance editor, floor/sweep logic
-│   │   ├── Goals.jsx            # Savings goals with linked account support
+│   │   ├── Goals.jsx            # Savings goals, linked accounts, harvest button
+│   │   ├── Garden.jsx           # Trophy room — harvested goals, lifetime wealth stat
+│   │   ├── MoneyTreeSVG.jsx     # Geometric SVG money tree illustration
 │   │   ├── Settings.jsx         # Accounts, income, bills, categories management
 │   │   ├── SplashScreen.jsx     # Animated launch screen
-│   │   └── shared.jsx           # StatCard, ProgressBar, Modal
+│   │   └── shared.jsx           # StatCard, ProgressBar, Modal, TxModal
 │   ├── lib/
 │   │   └── firebase.js          # Firebase init, auth, db, debounced save()
 │   └── utils/
@@ -141,6 +145,24 @@ Donjul/
 ├── vite.config.js
 └── firebase.json
 ```
+
+---
+
+## Firestore Data Shape
+
+User data is stored under `user_data/{uid}` as a single JSON-stringified `data` field containing:
+
+```json
+{
+  "goals": [],
+  "harvested_goals": [],
+  "accounts": [],
+  "months": {},
+  "settings": {}
+}
+```
+
+`harvested_goals` is an array of completed goal objects, each enriched with a `fruit` emoji badge assigned at harvest time.
 
 ---
 
