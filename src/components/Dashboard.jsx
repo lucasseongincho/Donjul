@@ -34,10 +34,10 @@ export default function Dashboard({ state, t, lang, currency }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 28 }} className="m-stat-grid">
         {accounts.map(a => (
-          <StatCard key={a.id} label={a.name} value={fmtShort(a.balance)} sub={t(a.type + "Type")} accent={a.type === "savings" ? "var(--c-accent)" : "#4ECDC4"} />
+          <StatCard key={a.id} label={a.name} value={fmtShort(a.balance)} accent={a.type === "savings" ? "var(--c-accent)" : "#4ECDC4"} />
         ))}
-        <StatCard label={t("monthlyIncome")} value={fmtShort(monthlyIncome)} sub={lang === "ko" ? `${incomeSources.length}개 수입원` : `${incomeSources.length} source${incomeSources.length !== 1 ? "s" : ""}`} accent="var(--c-green)" color="var(--c-green)" />
-        <StatCard label={t("plannedSurplus")} value={fmtShort(surplus)} sub={t("incomeMinusPlanned")} accent={surplus >= 0 ? "var(--c-green)" : "var(--c-red)"} color={surplus >= 0 ? "var(--c-green)" : "var(--c-red)"} />
+        <StatCard label={t("monthlyIncome")} value={fmtShort(monthlyIncome)} accent="var(--c-green)" color="var(--c-green)" />
+        <StatCard label={t("plannedSurplus")} value={fmtShort(surplus)} accent={surplus >= 0 ? "var(--c-green)" : "var(--c-red)"} color={surplus >= 0 ? "var(--c-green)" : "var(--c-red)"} />
       </div>
 
       {goals.length > 0 && (

@@ -58,10 +58,10 @@ export default function MonthlyView({ state, dispatch, t, lang, currency }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }} className="m-stat-grid">
-        <StatCard label={t("income")} value={fmtShort(netIncome)} sub={incomeSources.length === 0 ? t("noSources") : t("monthlyEst")} accent="var(--c-green)" color="var(--c-green)" />
-        <StatCard label={t("plannedSpend")} value={fmtShort(totalPlanned)} sub={t("billsAndCats")} accent="var(--c-accent)" />
-        <StatCard label={t("actualSpend")} value={fmtShort(netExpense)} sub={t("loggedTx")} accent={netExpense > totalPlanned ? "var(--c-red)" : "#4ECDC4"} color={netExpense > totalPlanned ? "var(--c-red)" : "#4ECDC4"} />
-        <StatCard label={t("netSurplus")} value={fmtShort(netSurplus)} sub={t("sweepRemainderLabel")} accent={netSurplus >= 0 ? "var(--c-green)" : "var(--c-red)"} color={netSurplus >= 0 ? "var(--c-green)" : "var(--c-red)"} />
+        <StatCard label={t("income")} value={fmtShort(netIncome)} accent="var(--c-green)" color="var(--c-green)" />
+        <StatCard label={t("plannedSpend")} value={fmtShort(totalPlanned)} accent="var(--c-accent)" />
+        <StatCard label={t("actualSpend")} value={fmtShort(netExpense)} accent={netExpense > totalPlanned ? "var(--c-red)" : "#4ECDC4"} color={netExpense > totalPlanned ? "var(--c-red)" : "#4ECDC4"} />
+        <StatCard label={t("netSurplus")} value={fmtShort(netSurplus)} accent={netSurplus >= 0 ? "var(--c-green)" : "var(--c-red)"} color={netSurplus >= 0 ? "var(--c-green)" : "var(--c-red)"} />
       </div>
 
       <div style={{ ...S.card, marginBottom: 20 }}>

@@ -1,22 +1,25 @@
-# Current Task: Dashboard Localization & Goal Text Layout
+# Current Task: UI/UX Brand Alignment & Color Theming
 
-There are two final polish items to fix regarding localization and CSS text wrapping.
+I want to update the visual design of my application to perfectly align with my new brand logo. I am attaching my logo image to this prompt. Please analyze it and "catch the vibe."
 
-### 1. Fix Account Types on Dashboard (`src/components/Dashboard.jsx`)
-- In the Dashboard component, locate the `accounts.map` loop that renders the `StatCard` for each account.
-- Currently, it passes the raw string: `sub={a.type}`. 
-- Update this to use the translation function: `sub={t(a.type + "Type")}` so it correctly renders "예금", "저축", etc., in Korean mode.
+### 1. Pre-Flight Safety (CRITICAL)
+Before changing a single line of code, please use the git CLI to commit the current state of the app so I can easily revert if I don't like the new design.
+- Run: `git add .`
+- Run: `git commit -m "Save point: Pre-logo UI redesign"`
 
-### 2. Fix Text Wrapping in Goals (`src/components/Goals.jsx`)
-- Locate the `<div>` containing the goal progress subtext: `현재 {fmt(g.saved)} · 남은 금액 {fmt(remaining)}`.
-- The text is currently wrapping awkwardly across multiple lines because the flex container is being squeezed.
-- Apply the following inline CSS properties to that specific `<div>` to force it onto a single line gracefully:
-  - `whiteSpace: "nowrap"`
-  - `overflow: "hidden"`
-  - `textOverflow: "ellipsis"`
-- Also, make sure the parent `<div>` holding the goal name and this subtext has `minWidth: 0` so the ellipsis can properly trigger without pushing the percentage/edit buttons off the screen.
+### 2. Analyze the Logo & Extract Palette
+- Look at the attached logo image. 
+- Extract the primary colors: specifically the exact hex codes for the dark green text/outlines, the bright green leaf, and the gold/yellow of the coins.
+- Identify the "vibe": It is organic, fresh, friendly, and wealth-building.
 
-### 3. STRICT PRESERVATION
-- **CRITICAL:** Do NOT alter the Toss-style UI, layout, or colors.
-- Do NOT break the existing Firebase syncing or logic.
-- Run `npm run build` to verify the components compile correctly.
+### 3. Update the App's Theming (`src/index.css` or Tailwind/Inline styles)
+- Inject this new color palette into the app. 
+- **Primary Buttons / Accents:** Replace the current default primary colors with the logo's Green or Gold.
+- **Backgrounds / Cards:** Keep the premium Toss-style soft shadows and large border-radiuses, but ensure the background colors complement the new green/gold palette. 
+- **Dark Mode Compatibility:** Ensure that the new colors still look good if the user switches to Dark Mode. If necessary, slightly desaturate the green/gold for the dark theme.
+
+### 4. Implementation Rules
+- Do NOT change the layout, flexbox structures, or the underlying Firebase logic. This is strictly a CSS/Color/Theming overhaul.
+- Do NOT remove any features (like Confetti or Auth).
+- When you are done, explain exactly what colors you changed and how they map to the logo.
+- Provide me with the exact `git` command to revert the changes if I decide I want the old design back.

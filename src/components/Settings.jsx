@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signOut } from 'firebase/auth';
+import { signOut, updatePassword } from 'firebase/auth';
 import { auth } from '../lib/firebase.js';
 import { S } from '../styles.js';
 import { formatMoney, getMonthlyIncome, newId } from '../utils/helpers.js';
@@ -11,6 +11,36 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [modalError, setModalError] = useState("");
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  const isEmailProvider = auth.currentUser?.providerData?.some(p => p.providerId === 'password');
+
+  const handleChangePassword = () => {
+    setPwError("");
+    setPwSuccess(false);
+    if (!newPassword || !confirmNewPassword) { setPwError("Please fill in both fields."); return; }
+    if (newPassword !== confirmNewPassword) { setPwError(t("passwordMismatch")); return; }
+    updatePassword(auth.currentUser, newPassword)
+      .then(() => {
+        setPwSuccess(true);
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setTimeout(() => { setChangePwOpen(false); setPwSuccess(false); }, 2000);
+      })
+      .catch(e => {
+        if (e.code === "auth/requires-recent-login") {
+          setPwError(t("requiresRecentLogin"));
+        } else if (e.code === "auth/weak-password") {
+          setPwError("Password must be at least 6 characters.");
+        } else {
+          setPwError("Something went wrong. Please try again.");
+        }
+      });
+  };
   const { accounts, incomeSources, fixedBills, personalCategories } = state;
 
   const openAdd = (section) => { setModal({ section, item: null }); setForm({}); setModalError(""); };
@@ -233,11 +263,46 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
         </div>
       </div>
 
-      <div>
+      <div style={{ display: "flex", gap: 10 }}>
+        {isEmailProvider && (
+          <button style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "var(--c-btn-sm-bg)", color: "var(--c-btn-sm-text)", letterSpacing: "0.04em" }}
+            onClick={() => { setChangePwOpen(true); setPwError(""); setPwSuccess(false); setNewPassword(""); setConfirmNewPassword(""); }}>
+            {t("changePassword")}
+          </button>
+        )}
         <button style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, fontFamily: "'Syne'", borderRadius: 6, cursor: "pointer", border: "none", background: "var(--c-danger-bg)", color: "var(--c-danger-text)", letterSpacing: "0.04em" }} onClick={() => signOut(auth)}>{t("signOut")}</button>
       </div>
 
       {renderModal()}
+
+      {changePwOpen && (
+        <Modal title={t("changePassword")} onClose={() => setChangePwOpen(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)", marginBottom: 5 }}>{t("newPassword")}</div>
+              <input style={S.input} type="password" value={newPassword} onChange={e => { setPwError(""); setNewPassword(e.target.value); }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)", marginBottom: 5 }}>{t("confirmNewPassword")}</div>
+              <input style={S.input} type="password" value={confirmNewPassword} onChange={e => { setPwError(""); setConfirmNewPassword(e.target.value); }} onKeyDown={e => e.key === "Enter" && handleChangePassword()} />
+            </div>
+            {pwError && (
+              <div style={{ background: "var(--c-danger-bg)", color: "var(--c-danger-text)", border: "1px solid var(--c-danger-text)", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>
+                {pwError}
+              </div>
+            )}
+            {pwSuccess && (
+              <div style={{ background: "rgba(80,200,120,0.12)", color: "var(--c-green)", border: "1px solid var(--c-green)", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>
+                {t("passwordChanged")}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button style={{ ...S.btn(), flex: 1 }} onClick={handleChangePassword}>{t("saveChanges")}</button>
+              <button style={{ ...S.btn("ghost"), flex: 1 }} onClick={() => setChangePwOpen(false)}>{t("cancel")}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

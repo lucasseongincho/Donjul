@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm config:*)",
+      "Bash(npm run:*)",
+      "Bash(./node_modules/.bin/vite build:*)",
+      "Bash(node:*)",
+      "Bash(python3:*)",
+      "Bash(npx firebase:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(pnpm:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(magick:*)",
+      "Bash(npm list:*)",
+      "Bash(sharp:*)",
+      "Bash(rm:*)",
+      "Bash(claude mcp:*)",
+      "Bash(magick --version 2>&1 || convert --version 2>&1 || echo \"ImageMagick not found\")",
+      "Bash(git add:*)"
+    ]
+  }
+}

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 import { S } from '../styles.js';
 import { formatMoney, newId } from '../utils/helpers.js';
 import { ProgressBar, Modal } from './shared.jsx';
@@ -9,22 +11,34 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
   const fmt = (n) => formatMoney(n, currency);
   const fmtShort = (n) => formatMoney(n, currency, true);
   const { goals, accounts } = state;
+  const { width, height } = useWindowSize();
+  const [showConfetti, setShowConfetti] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [editingPrevPct, setEditingPrevPct] = useState(0);
   const [adding, setAdding] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: "", target: "", saved: "", color: "#C9A84C", linkedAccountId: "" });
   const [addError, setAddError] = useState("");
+
+  const triggerConfetti = () => {
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 5000);
+  };
 
   const updateGoal = (id, field, val) => dispatch({ type: "UPDATE_GOAL", id, field, val });
   const deleteGoal = (id) => dispatch({ type: "DELETE_GOAL", id });
   const addGoal = () => {
     if (!newGoal.name?.trim()) { setAddError(t("goalNamePlaceholder") + " — " + "required."); return; }
     if (!newGoal.target || +newGoal.target <= 0) { setAddError(t("targetAmountLabel") + " must be greater than 0."); return; }
-    dispatch({ type: "ADD_GOAL", goal: { id: newId(), name: newGoal.name, target: +newGoal.target, saved: +(newGoal.saved) || 0, color: newGoal.color, linkedAccountId: newGoal.linkedAccountId || "" } });
+    const savedAmt = +(newGoal.saved) || 0;
+    const targetAmt = +newGoal.target;
+    dispatch({ type: "ADD_GOAL", goal: { id: newId(), name: newGoal.name, target: targetAmt, saved: savedAmt, color: newGoal.color, linkedAccountId: newGoal.linkedAccountId || "" } });
+    if (savedAmt >= targetAmt) triggerConfetti();
     setNewGoal({ name: "", target: "", saved: "", color: "#C9A84C", linkedAccountId: "" }); setAddError(""); setAdding(false);
   };
 
   return (
     <div style={S.page} className="m-page">
+      {showConfetti && <Confetti width={width} height={height} recycle={false} style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999 }} />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
           <div style={S.pageTitle}>{t("goalsTitle")}</div>
@@ -90,7 +104,11 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
                     </select>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button style={S.btn()} onClick={() => setEditing(null)}>{t("save")}</button>
+                    <button style={S.btn()} onClick={() => {
+                      const newPct = g.target ? Math.min(100, (effectiveSaved / g.target) * 100) : 0;
+                      if (newPct >= 100 && editingPrevPct < 100) triggerConfetti();
+                      setEditing(null);
+                    }}>{t("save")}</button>
                     <button style={S.btn("danger")} onClick={() => { deleteGoal(g.id); setEditing(null); }}>{t("deleteLabel")}</button>
                   </div>
                 </div>
@@ -112,7 +130,7 @@ export default function Goals({ state, dispatch, t, lang, currency }) {
                     </div>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <span style={{ ...S.mono, fontSize: 22, fontWeight: 700, color: g.color }}>{pct.toFixed(0)}%</span>
-                      <button style={S.btn("sm")} onClick={() => setEditing(g.id)}>{t("editLabel")}</button>
+                      <button style={S.btn("sm")} onClick={() => { setEditingPrevPct(pct); setEditing(g.id); }}>{t("editLabel")}</button>
                     </div>
                   </div>
                   <ProgressBar pct={pct} color={g.color} />

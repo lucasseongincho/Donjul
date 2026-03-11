@@ -14,6 +14,7 @@ import MonthlyView from './components/MonthlyView.jsx';
 import Accounts from './components/Accounts.jsx';
 import Goals from './components/Goals.jsx';
 import Settings from './components/Settings.jsx';
+import Onboarding from './components/Onboarding.jsx';
 
 function reducer(state, action) {
   switch (action.type) {
@@ -49,6 +50,7 @@ function reducer(state, action) {
       const m = { ...state.months[action.key], customRows: (state.months[action.key]?.customRows || []).filter(r => r.id !== action.rowId) };
       return { ...state, months: { ...state.months, [action.key]: m } };
     }
+    case "SET_ONBOARDING_SEEN": return { ...state, hasSeenOnboarding: true };
     default: return state;
   }
 }
@@ -65,9 +67,12 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
   const [lang, setLang] = useState(() => localStorage.getItem("lang") || "en");
   const [currency, setCurrency] = useState(() => localStorage.getItem("currency") || "USD");
+  const [loginError, setLoginError] = useState("");
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailMode, setEmailMode] = useState("signin");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [loginConfirmPassword, setLoginConfirmPassword] = useState("");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -153,8 +158,28 @@ export default function App() {
 
   const handleSignUp = () => {
     setLoginError("");
+    if (loginPassword !== loginConfirmPassword) {
+      setLoginError(t_("en", "passwordMismatch"));
+      return;
+    }
     createUserWithEmailAndPassword(auth, loginEmail, loginPassword)
       .catch(e => setLoginError(friendlyError(e.code)));
+  };
+
+  const openEmailModal = (mode) => {
+    setEmailMode(mode);
+    setEmailModalOpen(true);
+    setLoginError("");
+    setLoginEmail("");
+    setLoginPassword("");
+    setLoginConfirmPassword("");
+  };
+  const closeEmailModal = () => {
+    setEmailModalOpen(false);
+    setLoginError("");
+    setLoginEmail("");
+    setLoginPassword("");
+    setLoginConfirmPassword("");
   };
 
   if (!user) {
@@ -172,37 +197,43 @@ export default function App() {
       background: variant === "ghost" ? "var(--c-btn-sm-bg)" : "var(--c-accent)",
       color: variant === "ghost" ? "var(--c-text)" : "var(--c-bg)",
     });
+    const overlayStyle = {
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 1000, padding: 24,
+    };
+    const modalBoxStyle = {
+      background: "var(--c-card)", borderRadius: 16, padding: "28px 24px",
+      width: "100%", maxWidth: 380, boxShadow: "0 8px 40px rgba(0,0,0,0.28)",
+    };
     return (
       <div style={{ ...S.app, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 380, textAlign: "center" }}>
-          <div style={{ fontWeight: 800, fontSize: 40, color: "var(--c-accent)", letterSpacing: "0.05em", marginBottom: 6 }}>돈줄</div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+            {["en", "ko"].map(l => (
+              <button key={l} onClick={() => setLang(l)} style={{
+                padding: "5px 12px", fontSize: 12, fontWeight: 700, fontFamily: "'Syne'",
+                borderRadius: 6, border: "none", cursor: "pointer", letterSpacing: "0.04em",
+                background: lang === l ? "var(--c-accent)" : "var(--c-btn-sm-bg)",
+                color: lang === l ? "var(--c-bg)" : "var(--c-muted)",
+                marginLeft: 6,
+              }}>
+                {l === "en" ? "EN" : "한국어"}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 40, color: "var(--c-accent)", letterSpacing: "0.05em", marginBottom: 6 }}>{lang === "ko" ? "돈줄" : "Don Jul"}</div>
           <div style={{ fontSize: 13, color: "var(--c-muted)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 32 }}>{t("signInSub")}</div>
 
-          {loginError && (
+          {!emailModalOpen && loginError && (
             <div style={{ background: "var(--c-danger-bg)", border: "1px solid var(--c-danger-text)", borderRadius: 8, color: "var(--c-danger-text)", fontSize: 14, padding: "10px 14px", marginBottom: 16, textAlign: "left" }}>
               {loginError}
             </div>
           )}
 
-          <input
-            type="email" placeholder="Email" value={loginEmail}
-            onChange={e => setLoginEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleLogin()}
-            style={inputStyle}
-          />
-          <input
-            type="password" placeholder="Password" value={loginPassword}
-            onChange={e => setLoginPassword(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleLogin()}
-            style={{ ...inputStyle, marginBottom: 20 }}
-          />
+          <button style={{ ...bigBtn(), marginBottom: 12 }} onClick={() => openEmailModal("signin")}>{t("signInWithEmail")}</button>
 
-          <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-            <button style={{ ...bigBtn(), flex: 1 }} onClick={handleLogin}>Log In</button>
-            <button style={{ ...bigBtn("ghost"), flex: 1 }} onClick={handleSignUp}>Sign Up</button>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
             <div style={{ flex: 1, height: 1, background: "var(--c-input-border)" }} />
             <span style={{ color: "var(--c-muted)", fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>OR</span>
             <div style={{ flex: 1, height: 1, background: "var(--c-input-border)" }} />
@@ -213,6 +244,68 @@ export default function App() {
             {t("signInBtn")}
           </button>
         </div>
+
+        {emailModalOpen && (
+          <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) closeEmailModal(); }}>
+            <div style={modalBoxStyle}>
+              {/* Toggle */}
+              <div style={{ display: "flex", background: "var(--c-sub)", borderRadius: 10, padding: 4, marginBottom: 24 }}>
+                {["signin", "signup"].map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => { setEmailMode(mode); setLoginError(""); setLoginConfirmPassword(""); }}
+                    style={{
+                      flex: 1, padding: "9px 0", fontSize: 14, fontWeight: 700,
+                      fontFamily: "'Syne'", borderRadius: 7, border: "none", cursor: "pointer",
+                      letterSpacing: "0.04em",
+                      background: emailMode === mode ? "var(--c-accent)" : "transparent",
+                      color: emailMode === mode ? "var(--c-bg)" : "var(--c-muted)",
+                      transition: "background 0.15s, color 0.15s",
+                    }}
+                  >
+                    {mode === "signin" ? t("signInTitle") : t("signUpTitle")}
+                  </button>
+                ))}
+              </div>
+
+              {loginError && (
+                <div style={{ background: "var(--c-danger-bg)", border: "1px solid var(--c-danger-text)", borderRadius: 8, color: "var(--c-danger-text)", fontSize: 14, padding: "10px 14px", marginBottom: 14, textAlign: "left" }}>
+                  {loginError}
+                </div>
+              )}
+
+              <input
+                type="email" placeholder="Email" value={loginEmail}
+                onChange={e => { setLoginError(""); setLoginEmail(e.target.value); }}
+                onKeyDown={e => e.key === "Enter" && (emailMode === "signin" ? handleLogin() : handleSignUp())}
+                style={inputStyle}
+              />
+              <input
+                type="password" placeholder={t("signInTitle") === "Sign In" ? "Password" : t("newPassword")}
+                value={loginPassword}
+                onChange={e => { setLoginError(""); setLoginPassword(e.target.value); }}
+                onKeyDown={e => e.key === "Enter" && (emailMode === "signin" ? handleLogin() : handleSignUp())}
+                style={emailMode === "signup" ? inputStyle : { ...inputStyle, marginBottom: 20 }}
+              />
+              {emailMode === "signup" && (
+                <input
+                  type="password" placeholder={t("confirmPassword")}
+                  value={loginConfirmPassword}
+                  onChange={e => { setLoginError(""); setLoginConfirmPassword(e.target.value); }}
+                  onKeyDown={e => e.key === "Enter" && handleSignUp()}
+                  style={{ ...inputStyle, marginBottom: 20 }}
+                />
+              )}
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button style={{ ...bigBtn(), flex: 1 }} onClick={emailMode === "signin" ? handleLogin : handleSignUp}>
+                  {emailMode === "signin" ? t("signInTitle") : t("signUpTitle")}
+                </button>
+                <button style={{ ...bigBtn("ghost"), flex: 1 }} onClick={closeEmailModal}>{t("cancel")}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -230,7 +323,7 @@ export default function App() {
   return (
     <div style={{ ...S.app, wordBreak: lang === "ko" ? "keep-all" : "normal" }}>
       <nav style={S.nav} className="m-nav">
-        <div style={S.navBrand} className="m-nav-brand">돈 줄</div>
+        <div style={S.navBrand} className="m-nav-brand">{lang === "ko" ? "돈줄" : "Don Jul"}</div>
         {TABS.map(tab_ => (
           <button key={tab_.id} style={S.navTab(tab === tab_.id)} className={"m-nav-tab" + (tab === tab_.id ? " m-nav-tab-active" : "")} onClick={() => setTab(tab_.id)}>{tab_.label}</button>
         ))}
@@ -244,6 +337,9 @@ export default function App() {
       {tab === "accounts" && <Accounts state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} />}
       {tab === "goals" && <Goals state={state} dispatch={dispatch} t={t} lang={lang} currency={currency} />}
       {tab === "settings" && <Settings state={state} dispatch={dispatch} theme={theme} toggleTheme={toggleTheme} t={t} lang={lang} setLang={setLang} currency={currency} setCurrency={setCurrency} />}
+      {!state.hasSeenOnboarding && (
+        <Onboarding t={t} lang={lang} onDone={() => dispatch({ type: "SET_ONBOARDING_SEEN" })} />
+      )}
     </div>
   );
 }
