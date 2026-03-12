@@ -6,6 +6,11 @@ import { S } from '../styles.js';
 import { formatMoney, getMonthlyIncome, newId } from '../utils/helpers.js';
 import { Modal } from './shared.jsx';
 
+let deferredPrompt = null;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isChromeOnIOS = isIOS && /CriOS/i.test(navigator.userAgent);
+
 export default function Settings({ state, dispatch, theme, toggleTheme, t, lang, setLang, currency, setCurrency, onBeforeDeleteAccount, onStartTour, user }) {
   const fmt = (n) => formatMoney(n, currency);
   const fmtShort = (n) => formatMoney(n, currency, true);
@@ -21,6 +26,26 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
   const [pwSuccess, setPwSuccess] = useState(false);
   const pwTimerRef = useRef(null); // Fix #7
   useEffect(() => () => clearTimeout(pwTimerRef.current), []);
+
+  const [canInstall, setCanInstall] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setCanInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setCanInstall(false);
+    deferredPrompt = null;
+  };
 
   // Fix #12: derive from reactive `user` prop, not the non-reactive auth.currentUser
   const isEmailProvider = user?.providerData?.some(p => p.providerId === 'password');
@@ -229,6 +254,82 @@ export default function Settings({ state, dispatch, theme, toggleTheme, t, lang,
     <div style={S.page} className="m-page">
       <div style={S.pageTitle}>{t("settingsTitle")}</div>
       <div style={S.pageSub}>{t("settingsSub")}</div>
+
+      {!isStandalone && (
+        <div style={{ ...S.card, marginBottom: 24, borderColor: "var(--c-accent-faint)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+            <div style={{ fontSize: 32, lineHeight: 1 }}>📲</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "var(--c-text)", marginBottom: 2 }}>{t("installApp")}</div>
+              <div style={{ fontSize: 12, color: "var(--c-muted)" }}>{t("installAppSub")}</div>
+            </div>
+          </div>
+          {canInstall ? (
+            <button
+              style={{ ...S.btn('primary'), width: "100%", animation: "pulseGold 2s ease-in-out infinite" }}
+              onClick={handleInstall}
+            >
+              {t("installAppBtn")}
+            </button>
+          ) : isIOS ? (
+            <button style={{ ...S.btn('primary'), width: "100%" }} onClick={() => setShowIOSGuide(true)}>
+              {t("installHowTo")}
+            </button>
+          ) : (
+            <p style={{ fontSize: 13, color: "var(--c-dim)", lineHeight: 1.6, margin: 0 }}>
+              {t("installBrowserSub")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* iOS step-by-step install guide modal */}
+      {showIOSGuide && (
+        <div style={S.overlay} onClick={() => setShowIOSGuide(false)}>
+          <div style={{ ...S.modal, maxWidth: 360, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>📲</div>
+            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 6 }}>{t("installHowToTitle")}</div>
+            <div style={{ fontSize: 13, color: "var(--c-muted)", marginBottom: 24 }}>
+              {isChromeOnIOS ? t("installHowToSubChrome") : t("installHowToSubSafari")}
+            </div>
+
+            {/* Steps */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 28, textAlign: "left" }}>
+              {(isChromeOnIOS ? [
+                { icon: "⋯", label: t("installChromeStep1") },
+                { icon: "➕", label: t("installStep2") },
+                { icon: "✓",  label: t("installStep3") },
+              ] : [
+                { icon: "⎙",  label: t("installSafariStep1") },
+                { icon: "➕", label: t("installStep2") },
+                { icon: "✓",  label: t("installStep3") },
+              ]).map((step, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                    background: "var(--c-accent-subtle)", border: "1.5px solid var(--c-accent-faint)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 17, color: "var(--c-accent)", fontWeight: 700,
+                  }}>{step.icon}</div>
+                  <div style={{ fontSize: 14, color: "var(--c-text)", lineHeight: 1.6, paddingTop: 6 }}>{step.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Animated arrow pointing to where the button lives */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 22, color: "var(--c-accent)", animation: "bounceDown 1.1s ease-in-out infinite" }}>↓</div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4, letterSpacing: "0.04em" }}>
+                {isChromeOnIOS ? t("installArrowChrome") : t("installArrowSafari")}
+              </div>
+            </div>
+
+            <button style={{ ...S.btn(), width: "100%" }} onClick={() => setShowIOSGuide(false)}>
+              {t("installGotIt")}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }} className="m-grid-2col">
         <Section title={t("accountsTitle")} items={accounts} section="accounts"
