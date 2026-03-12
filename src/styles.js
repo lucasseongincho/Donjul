@@ -14,17 +14,32 @@ export const S = {
     backdropFilter: "blur(12px)",
     WebkitBackdropFilter: "blur(12px)",
   },
-  navBrand: { fontFamily: "'Geist'", fontWeight: 800, fontSize: 15, color: "var(--c-accent)", letterSpacing: "0.05em", padding: "16px 0", marginRight: 32, whiteSpace: "nowrap" },
+  // Gradient wordmark — mirrors the logo's two dominant colors (gold → leaf green)
+  navBrand: {
+    fontFamily: "'Geist'",
+    fontWeight: 800,
+    fontSize: 15,
+    background: "linear-gradient(90deg, var(--c-accent) 0%, var(--c-green) 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    letterSpacing: "0.05em",
+    padding: "16px 0",
+    marginRight: 32,
+    whiteSpace: "nowrap",
+  },
   navTab: (active) => ({
     padding: "16px 18px",
     fontSize: 13,
     fontWeight: 600,
     letterSpacing: "0.02em",
     cursor: "pointer",
-    color: active ? "var(--c-accent)" : "var(--c-muted)",
-    borderBottom: active ? "2px solid var(--c-accent)" : "2px solid transparent",
     background: "none",
-    border: "none",
+    border: "none",                           // clear button default first
+    borderBottom: active                      // then set indicator (longhand wins over shorthand above)
+      ? "2px solid var(--c-accent)"
+      : "2px solid transparent",
+    color: active ? "var(--c-accent)" : "var(--c-muted)",
     transition: "color .15s",
     whiteSpace: "nowrap",
   }),
@@ -34,9 +49,9 @@ export const S = {
   card: {
     background: "var(--c-card)",
     border: "1px solid var(--c-border)",
-    borderRadius: 16,
+    borderRadius: "var(--r-lg)",        // 22px — rounder, echoes logo coins
     padding: 20,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
+    boxShadow: "var(--shadow-card)",    // warm-tinted shadow
   },
   cardTitle: { fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--c-muted)", marginBottom: 12 },
   statVal: { fontFamily: "'Geist Mono'", fontSize: 26, fontWeight: 600, color: "var(--c-text)", lineHeight: 1, letterSpacing: "-0.02em" },
@@ -44,7 +59,7 @@ export const S = {
   input: {
     background: "var(--c-input-bg)",
     border: "1px solid var(--c-input-border)",
-    borderRadius: 10,
+    borderRadius: "var(--r-sm)",        // 10px
     color: "var(--c-text)",
     padding: "10px 14px",
     fontSize: 14,
@@ -56,7 +71,7 @@ export const S = {
   select: {
     background: "var(--c-input-bg)",
     border: "1px solid var(--c-input-border)",
-    borderRadius: 10,
+    borderRadius: "var(--r-sm)",        // 10px
     color: "var(--c-text)",
     padding: "10px 14px",
     fontSize: 14,
@@ -68,9 +83,9 @@ export const S = {
   btn: (variant = "primary") => ({
     padding: variant === "sm" ? "5px 12px" : "10px 18px",
     fontSize: variant === "sm" ? 11 : 13,
-    fontWeight: 600,
+    fontWeight: 700,
     fontFamily: "'Geist'",
-    borderRadius: variant === "sm" ? 8 : 10,
+    borderRadius: variant === "sm" ? 8 : 12,  // 12px for primary — spec requirement
     cursor: "pointer",
     border: "none",
     background:
@@ -82,12 +97,12 @@ export const S = {
       variant === "danger" ? "var(--c-danger-text)"
       : variant === "ghost" ? "var(--c-muted)"
       : variant === "sm" ? "var(--c-btn-sm-text)"
-      : "var(--c-bg)",
+      : "#0E0D09",    // dark text on gold — NEVER white (spec requirement)
     letterSpacing: "0.02em",
     transition: "opacity .15s, transform .1s",
     whiteSpace: "nowrap",
   }),
-  progressTrack: { background: "var(--c-border)", borderRadius: "9999px", height: 8, overflow: "hidden" },
+  progressTrack: { background: "var(--c-border)", borderRadius: "var(--r-pill)", height: 10, overflow: "hidden" },
   th: { fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--c-muted)", padding: "8px 12px", textAlign: "left", fontWeight: 600, borderBottom: "1px solid var(--c-border)" },
   td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid var(--c-input-bg)", fontFamily: "'Geist Mono'" },
   pill: (color) => ({ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", background: color + "22", color }),
@@ -106,13 +121,13 @@ export const S = {
   modal: {
     background: "var(--c-card)",
     border: "1px solid var(--c-border)",
-    borderRadius: 20,
+    borderRadius: "var(--r-xl)",        // 28px — spec requirement
     padding: 28,
     width: "100%",
     maxWidth: 480,
     maxHeight: "85vh",
     overflowY: "auto",
     WebkitOverflowScrolling: "touch",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.15)",
+    boxShadow: "var(--shadow-modal)",   // warm-tinted modal shadow
   },
 };

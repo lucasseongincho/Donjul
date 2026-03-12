@@ -14,6 +14,19 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ── Grain texture overlay — organic warmth at 0.025 opacity ── */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
 button,
 nav,
 [role="button"] {
@@ -28,7 +41,7 @@ textarea {
   font-size: 16px !important;
 }
 
-/* ── Focus rings (Toss-style) ── */
+/* ── Focus rings ── */
 input:focus,
 select:focus,
 textarea:focus {
@@ -63,49 +76,65 @@ button:focus-visible {
 /* ── Theme variables ── */
 /* Logo palette: forest green #2D6B2E · leaf green #6CC44A · coin gold #F2C430 */
 :root {
-  --c-bg: #0C0F0C;
-  --c-card: #141A14;
-  --c-nav: #101410;
-  --c-text: #EDEBE6;
-  --c-muted: #52566A;
-  --c-dim: #8A90A4;
-  --c-accent: #E8B820;
-  --c-green: #5DC44A;
-  --c-red: #FF6B6B;
-  --c-border: #1E261E;
-  --c-input-bg: #192019;
-  --c-input-border: #2A342A;
-  --c-sub: #101410;
-  --c-btn-sm-bg: #1E261E;
-  --c-btn-sm-text: #8A90A4;
-  --c-accent-faint: rgba(232, 184, 32, 0.15);
-  --c-accent-subtle: rgba(232, 184, 32, 0.07);
-  --c-danger-bg: #2A1010;
-  --c-danger-text: #FF6B6B;
-  --c-overlay: rgba(0, 0, 0, 0.6);
+  /* Colors — warm amber-black, NOT cold green-black */
+  --c-bg:              #0E0D09;
+  --c-card:            #171610;
+  --c-nav:             #131209;
+  --c-sub:             #131209;
+  --c-text:            #F0EDE4;
+  --c-muted:           #6B6A5A;  /* warm grey — NO blue cast */
+  --c-dim:             #918F80;
+  --c-accent:          #F2C430;  /* coin gold — sampled from logo */
+  --c-green:           #6CC44A;  /* leaf green — sampled from logo */
+  --c-forest:          #2D6B2E;  /* dark outline green from logo */
+  --c-red:             #FF6B6B;
+  --c-border:          #272518;
+  --c-input-bg:        #1C1B12;
+  --c-input-border:    #302E1E;
+  --c-btn-sm-bg:       #272518;
+  --c-btn-sm-text:     #918F80;
+  --c-accent-faint:    rgba(242, 196, 48, 0.15);
+  --c-accent-subtle:   rgba(242, 196, 48, 0.07);
+  --c-danger-bg:       #2A1010;
+  --c-danger-text:     #FF6B6B;
+  --c-overlay:         rgba(0, 0, 0, 0.65);
+
+  /* Border radius — rounder corners echo the circular coins in the logo */
+  --r-sm:   10px;
+  --r-md:   16px;
+  --r-lg:   22px;
+  --r-xl:   28px;
+  --r-pill: 9999px;
+
+  /* Shadows — warm-tinted, not neutral grey */
+  --shadow-card:  0 1px 4px rgba(0,0,0,0.35), 0 0 0 1px rgba(242,196,48,0.03);
+  --shadow-modal: 0 28px 64px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(242,196,48,0.06);
+  --shadow-hover: 0 4px 16px rgba(242,196,48,0.08), 0 1px 4px rgba(0,0,0,0.3);
 }
 
 [data-theme="light"] {
-  --c-bg: #F2F5EE;
-  --c-card: #FFFFFF;
-  --c-nav: #FFFFFF;
-  --c-text: #18171A;
-  --c-muted: #78746E;
-  --c-dim: #9A9590;
-  --c-accent: #8A6E06;
-  --c-green: #2D6B2E;
-  --c-red: #DC2626;
-  --c-border: #DDE4D8;
-  --c-input-bg: #ECF0E8;
-  --c-input-border: #C4CCBC;
-  --c-sub: #ECF0E8;
-  --c-btn-sm-bg: #E4EAE0;
-  --c-btn-sm-text: #68645E;
-  --c-accent-faint: rgba(138, 110, 6, 0.14);
-  --c-accent-subtle: rgba(138, 110, 6, 0.07);
-  --c-danger-bg: #FEE2E2;
-  --c-danger-text: #DC2626;
-  --c-overlay: rgba(0, 0, 0, 0.4);
+  /* Colors — warm cream/parchment, NOT cold grey-white */
+  --c-bg:              #F5F2E8;
+  --c-card:            #FDFCF6;
+  --c-nav:             #FDFCF6;
+  --c-sub:             #EDE9DA;
+  --c-text:            #1C1A12;
+  --c-muted:           #7A7564;
+  --c-dim:             #9A9585;
+  --c-accent:          #C49A0A;  /* darker gold for legibility on light */
+  --c-green:           #3A8A28;
+  --c-forest:          #2D6B2E;
+  --c-red:             #DC2626;
+  --c-border:          #DDD8C4;
+  --c-input-bg:        #EDE9DA;
+  --c-input-border:    #CCC8B0;
+  --c-btn-sm-bg:       #E4DFC8;
+  --c-btn-sm-text:     #6A6555;
+  --c-accent-faint:    rgba(196, 154, 10, 0.15);
+  --c-accent-subtle:   rgba(196, 154, 10, 0.07);
+  --c-danger-bg:       #FEE2E2;
+  --c-danger-text:     #DC2626;
+  --c-overlay:         rgba(0, 0, 0, 0.4);
 }
 
 @media (max-width: 640px) {
