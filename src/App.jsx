@@ -105,7 +105,7 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
-  useEffect(() => { localStorage.setItem("lang", lang); }, [lang]);
+  useEffect(() => { localStorage.setItem("lang", lang); document.title = lang === "ko" ? "돈줄" : "Don Jul"; }, [lang]);
   useEffect(() => { localStorage.setItem("currency", currency); }, [currency]);
 
   useEffect(() => {
@@ -262,7 +262,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div style={{ fontWeight: 800, fontSize: 40, color: "var(--c-accent)", letterSpacing: "0.05em", marginBottom: 6 }}>{lang === "ko" ? "돈줄" : "Don Jul"}</div>
+          <div style={{ fontWeight: 800, fontSize: 40, color: "var(--c-accent)", letterSpacing: "0.05em", marginBottom: 6 }}>{t("appName")}</div>
           <div style={{ fontSize: 13, color: "var(--c-muted)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 32 }}>{t("signInSub")}</div>
 
           {!emailModalOpen && loginError && (
@@ -376,7 +376,7 @@ export default function App() {
         </div>
       )}
       <nav style={S.nav} className="m-nav">
-        <div style={S.navBrand} className="m-nav-brand">{lang === "ko" ? "돈줄" : "Don Jul"}</div>
+        <div style={S.navBrand} className="m-nav-brand">{t("appName")}</div>
         {TABS.map(tab_ => {
           const tourClass = tab_.id === 'settings' ? ' tour-income-setup' : tab_.id === 'accounts' ? ' tour-add-account' : tab_.id === 'goals' ? ' tour-add-goal' : '';
           return <button key={tab_.id} style={S.navTab(tab === tab_.id)} className={"m-nav-tab" + (tab === tab_.id ? " m-nav-tab-active" : "") + tourClass} onClick={() => setTab(tab_.id)}>{tab_.label}</button>;
